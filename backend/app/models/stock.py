@@ -1,6 +1,6 @@
 from app import db
 from .base import BaseModel
-from datetime import datetime
+from app.utils.time_helper import beijing_now
 
 
 class OutboundOrder(BaseModel):
@@ -139,7 +139,7 @@ class StockMove(BaseModel):
     reference_id = db.Column(db.Integer)  # 关联单据ID
     quantity = db.Column(db.Integer, nullable=False)
     operator_id = db.Column(db.Integer, db.ForeignKey('users.id'))
-    moved_at = db.Column(db.DateTime, default=datetime.utcnow)
+    moved_at = db.Column(db.DateTime, default=beijing_now)
     remark = db.Column(db.String(256))
 
     # 关系

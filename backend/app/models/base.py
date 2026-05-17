@@ -1,5 +1,5 @@
 from app import db
-from datetime import datetime
+from app.utils.time_helper import beijing_now
 
 
 class BaseModel(db.Model):
@@ -7,8 +7,8 @@ class BaseModel(db.Model):
     __abstract__ = True
 
     id = db.Column(db.Integer, primary_key=True)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=beijing_now)
+    updated_at = db.Column(db.DateTime, default=beijing_now, onupdate=beijing_now)
 
     def to_dict(self):
         """转换为字典（用于API响应）"""
@@ -25,4 +25,4 @@ class BaseModel(db.Model):
         for key, value in kwargs.items():
             if hasattr(self, key):
                 setattr(self, key, value)
-        self.updated_at = datetime.utcnow()
+        self.updated_at = beijing_now()

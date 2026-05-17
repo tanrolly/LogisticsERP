@@ -9,12 +9,12 @@ from app.utils.scoring import score_operation
 bp = Blueprint('inventory', __name__)
 
 import uuid
-from datetime import datetime
+from app.utils.time_helper import beijing_now
 
 
 def generate_count_no():
     """生成盘点单号"""
-    return f"COUNT{datetime.now().strftime('%Y%m%d%H%M%S')}{str(uuid.uuid4().int)[:4]}"
+    return f"COUNT{beijing_now().strftime('%Y%m%d%H%M%S')}{str(uuid.uuid4().int)[:4]}"
 
 
 # ==================== 库存查询 ====================
@@ -237,7 +237,7 @@ def perform_count(id):
         return jsonify({'code': 400, 'message': '盘点单状态不正确'}), 400
 
     count.status = 'counting'
-    count.counted_at = datetime.utcnow()
+    count.counted_at = beijing_now()
 
     data = request.get_json()
     items_data = data.get('items', [])
@@ -284,7 +284,7 @@ def reconcile_count(id):
         return jsonify({'code': 400, 'message': '请先完成盘点'}), 400
 
     count.status = 'completed'
-    count.completed_at = datetime.utcnow()
+    count.completed_at = beijing_now()
 
     # 调整库存差异
     for item in count.items.all():
@@ -343,7 +343,7 @@ def get_inventory_alerts():
 
     # 检查过期商品（30天内过期）
     from datetime import timedelta
-    thirty_days_later = datetime.now().date() + timedelta(days=30)
+    thirty_days_later = beijing_now().date() + timedelta(days=30)
 
     inventory = Inventory.query.filter(
         Inventory.expiry_date.isnot(None),
@@ -351,7 +351,7 @@ def get_inventory_alerts():
     ).all()
 
     for inv in inventory:
-        if inv.expiry_date < datetime.now().date():
+        if inv.expiry_date < beijing_now().date():
             alerts['expired'].append(inv.to_dict())
         elif inv.expiry_date <= thirty_days_later:
             alerts['expiring'].append(inv.to_dict())

@@ -16,6 +16,7 @@ from app.models.inbound import InboundOrder, InboundItem
 from app.models.finance import AccountsPayable, PayablePayment, AccountsReceivable, ReceivablePayment
 from datetime import date, datetime
 from decimal import Decimal
+from app.utils.time_helper import beijing_now
 
 app = create_app()
 
@@ -79,7 +80,7 @@ with app.app_context():
     pr = PurchaseRequest(
         req_no='PR-20260501001', applicant_id=admin.id, goods_id=goods.id,
         quantity=100, est_unit_price=Decimal('50.00'), est_total_price=Decimal('5000.00'),
-        status='approved', reviewer_id=admin.id, reviewed_at=datetime.now()
+        status='approved', reviewer_id=admin.id, reviewed_at=beijing_now()
     )
     db.session.add(pr)
     db.session.flush()
@@ -279,7 +280,7 @@ with app.app_context():
     pr2 = PurchaseRequest(
         req_no='PR-20260501002', applicant_id=admin.id, goods_id=goods.id,
         quantity=50, est_unit_price=Decimal('30.00'), est_total_price=Decimal('1500.00'),
-        status='approved', reviewer_id=admin.id, reviewed_at=datetime.now()
+        status='approved', reviewer_id=admin.id, reviewed_at=beijing_now()
     )
     db.session.add(pr2)
     db.session.flush()

@@ -1,7 +1,8 @@
 """预警提醒 API —— 按类型返回预警列表"""
 from flask import Blueprint, jsonify
 from flask_login import login_required
-from datetime import datetime, timedelta
+from datetime import timedelta
+from app.utils.time_helper import beijing_now
 from app import db
 from app.models.stock import Inventory
 from app.models.finance import AccountsPayable, AccountsReceivable
@@ -75,7 +76,7 @@ def _inventory_alerts():
 def _expiry_alerts():
     """库存有效期预警：30天内过期"""
     alerts = []
-    today = datetime.now().date()
+    today = beijing_now().date()
     threshold = today + timedelta(days=30)
 
     items = Inventory.query.filter(
@@ -104,7 +105,7 @@ def _expiry_alerts():
 def _payable_alerts():
     """应付到期提醒"""
     alerts = []
-    today = datetime.now().date()
+    today = beijing_now().date()
 
     overdue_items = AccountsPayable.query.filter(
         AccountsPayable.due_date < today,
@@ -150,7 +151,7 @@ def _payable_alerts():
 def _receivable_alerts():
     """应收到期提醒"""
     alerts = []
-    today = datetime.now().date()
+    today = beijing_now().date()
 
     overdue_items = AccountsReceivable.query.filter(
         AccountsReceivable.due_date < today,
@@ -196,7 +197,7 @@ def _receivable_alerts():
 def _transport_alerts():
     """运输超时预警"""
     alerts = []
-    now = datetime.now()
+    now = beijing_now()
 
     orders = Order.query.filter(
         Order.status == 'in_transit',
@@ -223,7 +224,7 @@ def _transport_alerts():
 def _contract_alerts():
     """合同到期提醒"""
     alerts = []
-    today = datetime.now().date()
+    today = beijing_now().date()
     threshold = today + timedelta(days=30)
 
     pc_items = PurchaseContract.query.filter(

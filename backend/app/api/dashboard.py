@@ -10,7 +10,7 @@ from app.models.collab import OperationLog
 from app.models.group import Group
 from app.models.finance import AccountsPayable, AccountsReceivable
 from app.models.contract import PurchaseContract, TransportContract
-from datetime import datetime
+from app.utils.time_helper import beijing_now
 
 bp = Blueprint('dashboard', __name__)
 
@@ -50,7 +50,7 @@ def get_dashboard_stats():
         active_rooms = Group.query.filter_by(status='active').count()
 
         # 近期操作统计（今日）
-        today = datetime.now().date()
+        today = beijing_now().date()
         today_ops = OperationLog.query.filter(
             db.func.date(OperationLog.created_at) == today
         ).count()

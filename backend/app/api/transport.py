@@ -9,7 +9,8 @@ from app.models.goods import Goods
 from app.socket import broadcast_order_status
 from app.api.logs import log_operation
 from app.utils.scoring import score_operation
-from datetime import datetime, date
+from app.utils.time_helper import beijing_now
+from datetime import date
 from decimal import Decimal
 
 bp = Blueprint('transport', __name__)
@@ -248,7 +249,7 @@ def update_order_status(order_id):
         return error_response(f'状态不允许从 {order.status} 变更为 {new_status}')
 
     # 更新实际时间
-    now = datetime.utcnow()
+    now = beijing_now()
     if new_status == 'in_transit' and not order.actual_departure:
         order.actual_departure = now
     elif new_status == 'arrived' and not order.actual_arrival:
@@ -294,7 +295,7 @@ def confirm_pod(order_id):
     order.pod_status = 'signed'
     order.signee_name = data.get('signee_name', order.signee_name or '')
     order.signee_phone = data.get('signee_phone', order.signee_phone or '')
-    order.pod_signed_at = datetime.utcnow()
+    order.pod_signed_at = beijing_now()
 
     # 处理POD图片上传（模拟）
     if data.get('pod_image'):
@@ -472,7 +473,7 @@ def create_transport_record():
         location=data.get('location', ''),
         description=data.get('description', ''),
         recorded_by=current_user.id,
-        recorded_at=datetime.utcnow()
+        recorded_at=beijing_now()
     )
 
     db.session.add(record)
@@ -489,7 +490,7 @@ def create_transport_record():
     if data['status'] in status_map:
         order.status = status_map[data['status']]
         if data['status'] in ('arrived', 'signed') and not order.actual_arrival:
-            order.actual_arrival = datetime.utcnow()
+            order.actual_arrival = beijing_now()
         if data['status'] == 'signed':
             order.status = 'completed'
 
@@ -629,7 +630,7 @@ def update_exception(exception_id):
         old_status = exception.handle_status
         exception.handle_status = data['handle_status']
         if data['handle_status'] == 'resolved' and not exception.handled_at:
-            exception.handled_at = datetime.utcnow()
+            exception.handled_at = beijing_now()
             exception.handled_by = current_user.id
 
     if 'handle_note' in data:

@@ -3,7 +3,7 @@
 
 包含采购合同和运输合同的 CRUD、审批流、终止等操作。
 """
-from datetime import date, datetime
+from datetime import date
 from flask import Blueprint, jsonify, request
 from flask_login import login_required, current_user
 from app import db
@@ -13,6 +13,7 @@ from app.models.transport import Order
 from app.models.supplier import Supplier
 from app.models.customer import Customer
 from app.utils.scoring import score_operation
+from app.utils.time_helper import beijing_now
 from app.extensions import socketio
 
 bp = Blueprint('contracts', __name__, url_prefix='/api/contracts')
@@ -207,7 +208,7 @@ def approve_purchase_contract(contract_id):
     contract.status = PurchaseContract.STATUS_APPROVED
     contract.reviewer_id = current_user.id
     contract.review_comment = data.get('comment', '')
-    contract.reviewed_at = datetime.now()
+    contract.reviewed_at = beijing_now()
 
     db.session.commit()
 
@@ -238,7 +239,7 @@ def reject_purchase_contract(contract_id):
     contract.status = PurchaseContract.STATUS_REJECTED
     contract.reviewer_id = current_user.id
     contract.review_comment = data.get('comment', '')
-    contract.reviewed_at = datetime.now()
+    contract.reviewed_at = beijing_now()
 
     db.session.commit()
 
@@ -425,7 +426,7 @@ def approve_transport_contract(contract_id):
     contract.status = TransportContract.STATUS_APPROVED
     contract.reviewer_id = current_user.id
     contract.review_comment = data.get('comment', '')
-    contract.reviewed_at = datetime.now()
+    contract.reviewed_at = beijing_now()
 
     db.session.commit()
 
@@ -456,7 +457,7 @@ def reject_transport_contract(contract_id):
     contract.status = TransportContract.STATUS_REJECTED
     contract.reviewer_id = current_user.id
     contract.review_comment = data.get('comment', '')
-    contract.reviewed_at = datetime.now()
+    contract.reviewed_at = beijing_now()
 
     db.session.commit()
 

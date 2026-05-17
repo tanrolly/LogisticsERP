@@ -10,7 +10,7 @@ import csv
 import codecs
 from flask_login import login_required
 from app.models import PurchaseOrder, Order, Inventory, Goods, Warehouse, Supplier
-from datetime import datetime
+from app.utils.time_helper import beijing_now
 
 bp = Blueprint('export', __name__)
 
@@ -88,7 +88,7 @@ def _export_excel_purchase(orders):
     return send_file(
         output,
         as_attachment=True,
-        download_name=f'采购订单_{datetime.now().strftime("%Y%m%d_%H%M%S")}.xlsx',
+        download_name=f'采购订单_{beijing_now().strftime("%Y%m%d_%H%M%S")}.xlsx',
         mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
     )
 
@@ -126,7 +126,7 @@ def _export_excel_transport(orders):
     return send_file(
         output,
         as_attachment=True,
-        download_name=f'运输订单_{datetime.now().strftime("%Y%m%d_%H%M%S")}.xlsx',
+        download_name=f'运输订单_{beijing_now().strftime("%Y%m%d_%H%M%S")}.xlsx',
         mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
     )
 
@@ -164,7 +164,7 @@ def _export_excel_inventory(items):
     return send_file(
         output,
         as_attachment=True,
-        download_name=f'库存数据_{datetime.now().strftime("%Y%m%d_%H%M%S")}.xlsx',
+        download_name=f'库存数据_{beijing_now().strftime("%Y%m%d_%H%M%S")}.xlsx',
         mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
     )
 
@@ -195,7 +195,7 @@ def _export_csv_purchase(orders):
     return send_file(
         output,
         as_attachment=True,
-        download_name=f'采购订单_{datetime.now().strftime("%Y%m%d_%H%M%S")}.csv',
+        download_name=f'采购订单_{beijing_now().strftime("%Y%m%d_%H%M%S")}.csv',
         mimetype='text/csv'
     )
 
@@ -225,7 +225,7 @@ def _export_csv_transport(orders):
     return send_file(
         output,
         as_attachment=True,
-        download_name=f'运输订单_{datetime.now().strftime("%Y%m%d_%H%M%S")}.csv',
+        download_name=f'运输订单_{beijing_now().strftime("%Y%m%d_%H%M%S")}.csv',
         mimetype='text/csv'
     )
 
@@ -255,6 +255,6 @@ def _export_csv_inventory(items):
     return send_file(
         output,
         as_attachment=True,
-        download_name=f'库存数据_{datetime.now().strftime("%Y%m%d_%H%M%S")}.csv',
+        download_name=f'库存数据_{beijing_now().strftime("%Y%m%d_%H%M%S")}.csv',
         mimetype='text/csv'
     )

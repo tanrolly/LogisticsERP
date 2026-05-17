@@ -8,7 +8,8 @@ from app.models.supplier import Supplier
 from app.socket import broadcast_order_status
 from app.api.logs import log_operation
 from app.utils.scoring import score_operation
-from datetime import datetime, date
+from app.utils.time_helper import beijing_now
+from datetime import date
 
 bp = Blueprint('purchase', __name__)
 
@@ -140,7 +141,7 @@ def approve_purchase_request(pr_id):
     pr.status = 'approved'
     pr.reviewer_id = current_user.id
     pr.review_comment = request.get_json().get('comment', '') if request.get_json() else ''
-    pr.reviewed_at = datetime.utcnow()
+    pr.reviewed_at = beijing_now()
     db.session.commit()
 
     # 记录操作日志
@@ -176,7 +177,7 @@ def reject_purchase_request(pr_id):
     pr.status = 'rejected'
     pr.reviewer_id = current_user.id
     pr.review_comment = data.get('comment', '驳回')
-    pr.reviewed_at = datetime.utcnow()
+    pr.reviewed_at = beijing_now()
     db.session.commit()
 
     # 记录操作日志

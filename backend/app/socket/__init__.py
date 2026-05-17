@@ -4,7 +4,7 @@ WebSocket 事件处理器
 """
 from flask_socketio import emit, join_room, leave_room
 from flask_login import current_user
-from datetime import datetime
+from app.utils.time_helper import beijing_now
 
 
 def init_socket(socketio):
@@ -84,7 +84,7 @@ def broadcast_order_status(order_type, order_id, status, group_id=None, extra_da
         'status': status,
         'operator_id': None,
         'operator_name': '系统',
-        'timestamp': datetime.utcnow().isoformat()
+        'timestamp': beijing_now().isoformat()
     }
     try:
         if current_user and current_user.is_authenticated:
@@ -109,7 +109,7 @@ def broadcast_todo(user_id, message, todo_type=None, reference_id=None):
         'message': message,
         'todo_type': todo_type,
         'reference_id': reference_id,
-        'timestamp': datetime.utcnow().isoformat()
+        'timestamp': beijing_now().isoformat()
     }
     _safe_emit('todo_notification', data, room=f'user_{user_id}')
 
@@ -118,7 +118,7 @@ def broadcast_event(group_id, event_data):
     """广播突发事件给小组所有成员"""
     data = {
         **event_data,
-        'timestamp': datetime.utcnow().isoformat()
+        'timestamp': beijing_now().isoformat()
     }
     _safe_emit('event_injected', data, room=f'group_{group_id}')
 
@@ -128,6 +128,6 @@ def broadcast_group_progress(group_id, progress_data):
     data = {
         'group_id': group_id,
         **progress_data,
-        'timestamp': datetime.utcnow().isoformat()
+        'timestamp': beijing_now().isoformat()
     }
     _safe_emit('group_progress', data, room='teacher_monitor')

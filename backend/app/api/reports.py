@@ -13,6 +13,7 @@ from app.models import (
 from datetime import datetime, timedelta
 
 bp = Blueprint('reports', __name__)
+from app.utils.time_helper import beijing_now
 
 
 @bp.route('/reports/inventory-turnover', methods=['GET'])
@@ -24,7 +25,7 @@ def inventory_turnover():
         turnover_data = []
 
         for i in range(5, -1, -1):
-            date = datetime.now() - timedelta(days=30*i)
+            date = beijing_now() - timedelta(days=30*i)
             year_month = f"{date.year}-{date.month:02d}"
             months.append(year_month)
 

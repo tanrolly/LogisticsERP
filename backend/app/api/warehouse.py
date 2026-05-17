@@ -10,12 +10,12 @@ from app.utils.scoring import score_operation
 bp = Blueprint('warehouse', __name__)
 
 import uuid
-from datetime import datetime
+from app.utils.time_helper import beijing_now
 
 
 def generate_order_no(prefix='OUT'):
     """生成单号"""
-    return f"{prefix}{datetime.now().strftime('%Y%m%d%H%M%S')}{str(uuid.uuid4().int)[:4]}"
+    return f"{prefix}{beijing_now().strftime('%Y%m%d%H%M%S')}{str(uuid.uuid4().int)[:4]}"
 
 
 # ==================== 入库单管理 ====================
@@ -119,7 +119,7 @@ def shelve_inbound(id):
     data = request.get_json()
     order.status = 'completed'
     order.operator_id = current_user.id
-    order.completed_at = datetime.utcnow()
+    order.completed_at = beijing_now()
 
     # 处理每个明细
     for item in order.items.all():
@@ -288,7 +288,7 @@ def pick_outbound(id):
     data = request.get_json()
     order.status = 'picking'
     order.operator_id = current_user.id
-    order.picked_at = datetime.utcnow()
+    order.picked_at = beijing_now()
 
     # 处理每个明细
     for item in order.items.all():
@@ -363,7 +363,7 @@ def ship_outbound(id):
         return jsonify({'code': 400, 'message': '请先完成拣货'}), 400
 
     order.status = 'completed'
-    order.shipped_at = datetime.utcnow()
+    order.shipped_at = beijing_now()
 
     # 更新明细状态
     for item in order.items.all():
