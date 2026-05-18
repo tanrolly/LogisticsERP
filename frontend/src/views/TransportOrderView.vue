@@ -34,10 +34,13 @@
         </el-table-column>
         <el-table-column prop="vehicle_plate" label="车牌" width="100" />
         <el-table-column prop="driver_name" label="司机" width="80" />
-        <el-table-column label="操作" width="250" fixed="right">
+            <el-table-column label="操作" width="320" fixed="right">
           <template #default="{row}">
             <el-button size="small" @click="viewDetail(row)">详情</el-button>
-            <el-button v-if="row.status==='pending'" size="small" type="success" @click="handleApprove(row)">审核</el-button>
+            <el-button v-if="row.status==='pending'" size="small" type="success" @click="handleApprove(row)">审核通过</el-button>
+            <el-button v-if="row.status==='pending'" size="small" type="warning" @click="handleReturn(row)">退回</el-button>
+            <el-button v-if="row.status==='pending'" size="small" type="danger" @click="handleReject(row)">驳回</el-button>
+            <el-button v-if="row.status==='returned'" size="small" type="primary" @click="handleResubmit(row)">重新提交</el-button>
             <el-button v-if="row.status==='approved'" size="small" type="warning" @click="showDispatchDialog(row)">调度</el-button>
           </template>
         </el-table-column>
@@ -113,7 +116,7 @@ const guideConfig = { title: '运输订单操作指引', steps: [
 import { ref, onMounted, onUnmounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { orderAPI, customerAPI, vehicleAPI, driverAPI } from '../api/index'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 
 const router = useRouter()
 const list = ref([])
@@ -131,8 +134,8 @@ const dispatchForm = ref({ vehicle_id:null, driver_id:null, plan_departure:'', p
 const isMobile = ref(false)
 const checkWidth = () => { isMobile.value = window.innerWidth < 768 }
 
-const statusType = (s) => ({ pending:'warning', approved:'', dispatched:'', in_transit:'primary', arrived:'success', signed:'', completed:'success', cancelled:'info' }[s]||'info')
-const statusLabel = (s) => ({ pending:'待审核', approved:'已审核', dispatched:'已调度', in_transit:'运输中', arrived:'已到达', signed:'已签收', completed:'已完成', cancelled:'已取消' }[s]||s)
+const statusType = (s) => ({ pending:'warning', approved:'', returned:'warning', dispatched:'', in_transit:'primary', arrived:'success', signed:'', completed:'success', cancelled:'info' }[s]||'info')
+const statusLabel = (s) => ({ pending:'待审核', approved:'已审核', returned:'已退回', dispatched:'已调度', in_transit:'运输中', arrived:'已到达', signed:'已签收', completed:'已完成', cancelled:'已取消' }[s]||s)
 
 const loadData = async () => {
   loading.value = true
@@ -181,6 +184,38 @@ const handleCreate = async () => {
 const handleApprove = async (row) => {
   const res = await orderAPI.approve(row.id)
   if (res.data.code === 200) { ElMessage.success('审核通过'); loadData() }
+}
+
+const handleReturn = async (row) => {
+  try {
+    const { value } = await ElMessageBox.prompt('请输入退回原因（必填）', '退回修改', {
+      confirmButtonText: '退回',
+      inputPlaceholder: '请填写退回原因',
+      inputValidator: (v) => !!v || '退回原因不能为空',
+      inputErrorMessage: '退回原因不能为空'
+    })
+    const res = await orderAPI.return(row.id, value)
+    if (res.data.code === 200) { ElMessage.success('已退回'); loadData() }
+  } catch (e) { if (e !== 'cancel') ElMessage.error('操作失败') }
+}
+
+const handleReject = async (row) => {
+  try {
+    const { value } = await ElMessageBox.prompt('请输入驳回原因', '驳回', {
+      confirmButtonText: '驳回',
+      inputPlaceholder: '请填写驳回原因'
+    })
+    const res = await orderAPI.reject(row.id, value || '驳回')
+    if (res.data.code === 200) { ElMessage.success('已驳回'); loadData() }
+  } catch (e) { if (e !== 'cancel') ElMessage.error('操作失败') }
+}
+
+const handleResubmit = async (row) => {
+  try {
+    await ElMessageBox.confirm('确认重新提交该运输订单？', '重新提交', { type: 'info' })
+    const res = await orderAPI.resubmit(row.id)
+    if (res.data.code === 200) { ElMessage.success('已重新提交，等待审核'); loadData() }
+  } catch (e) { if (e !== 'cancel') ElMessage.error('操作失败') }
 }
 
 const showDispatchDialog = async (row) => {

@@ -11,6 +11,7 @@ from app.api.logs import log_operation
 from app.utils.scoring import score_operation
 from app.utils.time_helper import beijing_now
 from app.utils.permissions import role_required
+from app.models.approval import ApprovalRecord
 from datetime import date
 from decimal import Decimal
 
@@ -83,6 +84,11 @@ def create_order():
     db.session.add(order)
     db.session.commit()
 
+    # 记录审批记录（提交）
+    _create_approval_record('transport_order', order.id, 'submit', current_user,
+                            f'创建运输订单 {order.order_no}')
+    db.session.commit()
+
     # 记录操作日志
     log_operation(
         user_id=current_user.id,
@@ -124,6 +130,8 @@ def approve_order(order_id):
     order.status = 'approved'
     db.session.commit()
 
+    _create_approval_record('transport_order', order.id, 'approve', current_user)
+
     # 记录操作日志
     log_operation(
         user_id=current_user.id,
@@ -154,8 +162,13 @@ def reject_order(order_id):
     if order.status != 'pending':
         return error_response('该订单不在待审核状态')
 
+    data = request.get_json() or {}
+    reject_comment = data.get('comment', '驳回')
     order.status = 'cancelled'
     db.session.commit()
+
+    _create_approval_record('transport_order', order.id, 'reject', current_user,
+                            reject_comment)
 
     # 记录操作日志
     log_operation(
@@ -175,6 +188,91 @@ def reject_order(order_id):
     broadcast_order_status('transport_order', order.id, 'cancelled', current_user.group_id)
 
     return success_response(order.to_dict(), '已驳回')
+
+
+def _create_approval_record(target_type, target_id, action, operator, comment=''):
+    """写入审批记录"""
+    record = ApprovalRecord(
+        target_type=target_type,
+        target_id=target_id,
+        action=action,
+        comment=comment,
+        operator_id=operator.id,
+        operator_name=operator.real_name
+    )
+    db.session.add(record)
+
+
+@bp.route('/orders/<int:order_id>/return', methods=['PUT'])
+@role_required('admin', 'dispatcher')
+@login_required
+def return_order(order_id):
+    """退回运输订单（可重新提交）"""
+    order = Order.query.get_or_404(order_id)
+
+    if order.status != 'pending':
+        return error_response('该订单不在待审核状态')
+
+    data = request.get_json() or {}
+    comment = data.get('comment', '')
+    if not comment:
+        return error_response('退回意见不能为空')
+
+    order.status = 'returned'
+    db.session.commit()
+
+    _create_approval_record('transport_order', order.id, 'return', current_user, comment)
+
+    log_operation(
+        user_id=current_user.id,
+        group_id=current_user.group_id,
+        module='transport_order',
+        action='return',
+        target_type='Order',
+        target_id=order.id,
+        description=f'退回运输订单 {order.order_no}，意见：{comment}'
+    )
+    db.session.commit()
+
+    score_operation(user_id=current_user.id, group_id=current_user.group_id,
+                    module='transport_order', action='return')
+    broadcast_order_status('transport_order', order.id, 'returned', current_user.group_id)
+
+    return success_response(order.to_dict(), '已退回，申请人可修改后重新提交')
+
+
+@bp.route('/orders/<int:order_id>/resubmit', methods=['PUT'])
+@login_required
+def resubmit_order(order_id):
+    """重新提交运输订单（仅创建人可操作）"""
+    order = Order.query.get_or_404(order_id)
+
+    if order.status != 'returned':
+        return error_response('只有被退回的订单才能重新提交')
+    if order.operator_id != current_user.id:
+        return error_response('只有创建人才能重新提交')
+
+    order.status = 'pending'
+    db.session.commit()
+
+    _create_approval_record('transport_order', order.id, 'resubmit', current_user, '重新提交')
+
+    log_operation(
+        user_id=current_user.id,
+        group_id=current_user.group_id,
+        module='transport_order',
+        action='resubmit',
+        target_type='Order',
+        target_id=order.id,
+        description=f'重新提交运输订单 {order.order_no}'
+    )
+    db.session.commit()
+
+    score_operation(user_id=current_user.id, group_id=current_user.group_id,
+                    module='transport_order', action='resubmit')
+    broadcast_order_status('transport_order', order.id, 'pending', current_user.group_id)
+
+    return success_response(order.to_dict(), '运输订单已重新提交，等待审核')
 
 
 @bp.route('/orders/<int:order_id>/dispatch', methods=['PUT'])

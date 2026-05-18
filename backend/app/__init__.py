@@ -83,6 +83,9 @@ def create_app(config_class=Config):
     from app.api.users import bp as users_bp
     app.register_blueprint(users_bp, url_prefix='/api')
 
+    from app.api.approval import bp as approval_bp
+    app.register_blueprint(approval_bp, url_prefix='/api')
+
     # 启动时自动初始化预设教学场景（若不存在）
     try:
         from app.api.teaching import init_preset_scenes

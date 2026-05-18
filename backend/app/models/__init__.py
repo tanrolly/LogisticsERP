@@ -15,6 +15,7 @@ from app.models.stock import OutboundOrder, OutboundItem, Inventory, StockMove, 
 from app.models.collab import OperationLog, Score
 from app.models.finance import AccountsPayable, PayablePayment, AccountsReceivable, ReceivablePayment
 from app.models.contract import PurchaseContract, TransportContract
+from app.models.approval import ApprovalRecord
 
 __all__ = [
     'User', 'Role', 'Group',
@@ -28,4 +29,5 @@ __all__ = [
     'OperationLog', 'Score',
     'AccountsPayable', 'PayablePayment', 'AccountsReceivable', 'ReceivablePayment',
     'PurchaseContract', 'TransportContract',
+    'ApprovalRecord',
 ]

@@ -37,6 +37,12 @@
       </el-descriptions>
     </el-card>
 
+    <!-- 审批记录 -->
+    <el-card style="margin-bottom:20px">
+      <template #header><span>审批记录</span></template>
+      <ApprovalTimeline target-type="transport_order" :target-id="order?.id" />
+    </el-card>
+
     <!-- 操作按钮 -->
     <el-card style="margin-bottom:20px">
       <template #header><span>操作</span></template>
@@ -188,6 +194,7 @@
 
 <script setup>
 import PageGuide from '../components/PageGuide.vue'
+import ApprovalTimeline from '../components/ApprovalTimeline.vue'
 
 const guideConfig = { title: '运输订单详情操作指引', steps: [
         "查看订单基本信息",
@@ -219,8 +226,8 @@ const checkWidth = () => { isMobile.value = window.innerWidth < 768 }
 const statusMap = ['pending','approved','dispatched','in_transit','arrived','signed','completed']
 const stepIndex = computed(() => order.value ? statusMap.indexOf(order.value.status) : 0)
 
-const statusType = (s) => ({ pending:'warning', approved:'', dispatched:'', in_transit:'primary', arrived:'success', signed:'', completed:'success', cancelled:'info' }[s]||'info')
-const statusLabel = (s) => ({ pending:'待审核', approved:'已审核', dispatched:'已调度', in_transit:'运输中', arrived:'已到达', signed:'已签收', completed:'已完成', cancelled:'已取消' }[s]||s)
+const statusType = (s) => ({ pending:'warning', returned:'warning', approved:'', dispatched:'', in_transit:'primary', arrived:'success', signed:'', completed:'success', cancelled:'info' }[s]||'info')
+const statusLabel = (s) => ({ pending:'待审核', returned:'已退回', approved:'已审核', dispatched:'已调度', in_transit:'运输中', arrived:'已到达', signed:'已签收', completed:'已完成', cancelled:'已取消' }[s]||s)
 const timelineType = (s) => ({ departed:'primary', in_transit:'primary', arrived:'success', signed:'success' }[s]||'info')
 
 // 异常类型映射

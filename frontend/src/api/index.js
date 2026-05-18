@@ -22,7 +22,9 @@ export const goodsAPI = crudApi('goods')
 export const purchaseRequestAPI = {
   ...crudApi('purchase-requests'),
   approve: (id, comment) => axios.put(`/purchase-requests/${id}/approve`, { comment }),
-  reject: (id, comment) => axios.put(`/purchase-requests/${id}/reject`, { comment })
+  reject: (id, comment) => axios.put(`/purchase-requests/${id}/reject`, { comment }),
+  return: (id, comment) => axios.put(`/purchase-requests/${id}/return`, { comment }),
+  resubmit: (id) => axios.put(`/purchase-requests/${id}/resubmit`)
 }
 
 export const purchaseOrderAPI = {
@@ -42,7 +44,9 @@ export const orderAPI = {
   get: (id) => axios.get(`/orders/${id}`),
   create: (data) => axios.post('/orders', data),
   approve: (id) => axios.put(`/orders/${id}/approve`),
-  reject: (id) => axios.put(`/orders/${id}/reject`),
+  reject: (id, comment) => axios.put(`/orders/${id}/reject`, { comment }),
+  return: (id, comment) => axios.put(`/orders/${id}/return`, { comment }),
+  resubmit: (id) => axios.put(`/orders/${id}/resubmit`),
   dispatch: (id, data) => axios.put(`/orders/${id}/dispatch`, data),
   updateStatus: (id, data) => axios.put(`/orders/${id}/status`, data),
   getFreight: (id) => axios.get(`/orders/${id}/freight`),
@@ -168,4 +172,10 @@ export const userAPI = {
   delete: (id) => axios.delete(`/users/${id}`),
   resetPassword: (id, password) => axios.put(`/users/${id}/reset-password`, { password }),
   getRoles: () => axios.get('/users/roles')
+}
+
+// ============ 审批记录 ============
+export const approvalAPI = {
+  list: (params) => axios.get('/approval-records', { params }),
+  get: (id) => axios.get(`/approval-records/${id}`)
 }

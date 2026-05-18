@@ -62,7 +62,7 @@ with app.app_context():
     db.session.add(supplier)
     db.session.flush()
 
-    customer = Customer(name='测试客户', contact='李四', phone='13900000001', credit_level='vip', status='active')
+    customer = Customer(customer_no='C001', name='测试客户', contact_person='李四', phone='13900000001', level='vip', status='active')
     db.session.add(customer)
     db.session.flush()
 

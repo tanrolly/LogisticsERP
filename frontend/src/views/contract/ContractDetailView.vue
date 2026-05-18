@@ -71,6 +71,12 @@
           <el-descriptions-item label="创建时间">{{ contract.created_at }}</el-descriptions-item>
           <el-descriptions-item label="更新时间">{{ contract.updated_at }}</el-descriptions-item>
         </el-descriptions>
+
+        <!-- 审批记录 -->
+        <el-card class="detail-section">
+          <template #header><span>审批记录</span></template>
+          <ApprovalTimeline :target-type="contractType === 'purchase' ? 'purchase_contract' : 'transport_contract'" :target-id="contract.id" />
+        </el-card>
       </template>
     </div>
   </div>
@@ -80,6 +86,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { purchaseContractAPI, transportContractAPI } from '../../api/contract'
+import ApprovalTimeline from '../../components/ApprovalTimeline.vue'
 
 const route = useRoute()
 const router = useRouter()

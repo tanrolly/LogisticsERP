@@ -16,6 +16,7 @@ from app.utils.scoring import score_operation
 from app.utils.time_helper import beijing_now
 from app.extensions import socketio
 from app.utils.permissions import role_required
+from app.models.approval import ApprovalRecord
 
 bp = Blueprint('contracts', __name__, url_prefix='/api/contracts')
 
@@ -154,6 +155,14 @@ def create_purchase_contract():
     db.session.add(contract)
     db.session.commit()
 
+    # 写入审批记录（提交）
+    record = ApprovalRecord(
+        target_type='purchase_contract', target_id=contract.id,
+        action='submit', comment=f'创建采购合同 {contract.contract_no}',
+        operator_id=current_user.id, operator_name=current_user.real_name
+    )
+    db.session.add(record)
+
     # 评分
     score_operation(
         user_id=current_user.id,
@@ -214,6 +223,14 @@ def approve_purchase_contract(contract_id):
 
     db.session.commit()
 
+    # 写入审批记录
+    record = ApprovalRecord(
+        target_type='purchase_contract', target_id=contract.id,
+        action='approve', comment=data.get('comment', ''),
+        operator_id=current_user.id, operator_name=current_user.real_name
+    )
+    db.session.add(record)
+
     # 评分
     score_operation(
         user_id=current_user.id,
@@ -225,6 +242,39 @@ def approve_purchase_contract(contract_id):
     )
 
     return jsonify({'code': 200, 'message': '审批通过', 'data': contract.to_dict()})
+
+
+@bp.route('/purchase/<int:contract_id>/return', methods=['PUT'])
+@role_required('admin', 'purchaser')
+@login_required
+def return_purchase_contract(contract_id):
+    """退回采购合同（可重新提交）"""
+    contract = PurchaseContract.query.get(contract_id)
+    if not contract:
+        return jsonify({'code': 404, 'message': '合同不存在', 'data': None}), 404
+    if contract.status != PurchaseContract.STATUS_PENDING:
+        return jsonify({'code': 400, 'message': '只有待审批的合同才能退回', 'data': None}), 400
+
+    data = request.get_json() or {}
+    comment = data.get('comment', '')
+    if not comment:
+        return jsonify({'code': 400, 'message': '退回意见不能为空', 'data': None}), 400
+
+    contract.status = PurchaseContract.STATUS_REJECTED  # 复用rejected状态标记退回
+    contract.reviewer_id = current_user.id
+    contract.review_comment = comment
+    contract.reviewed_at = beijing_now()
+
+    db.session.commit()
+
+    record = ApprovalRecord(
+        target_type='purchase_contract', target_id=contract.id,
+        action='return', comment=comment,
+        operator_id=current_user.id, operator_name=current_user.real_name
+    )
+    db.session.add(record)
+
+    return jsonify({'code': 200, 'message': '已退回', 'data': contract.to_dict()})
 
 
 @bp.route('/purchase/<int:contract_id>/reject', methods=['PUT'])
@@ -245,6 +295,14 @@ def reject_purchase_contract(contract_id):
     contract.reviewed_at = beijing_now()
 
     db.session.commit()
+
+    # 写入审批记录
+    record = ApprovalRecord(
+        target_type='purchase_contract', target_id=contract.id,
+        action='reject', comment=data.get('comment', ''),
+        operator_id=current_user.id, operator_name=current_user.real_name
+    )
+    db.session.add(record)
 
     return jsonify({'code': 200, 'message': '已驳回', 'data': contract.to_dict()})
 
@@ -375,6 +433,14 @@ def create_transport_contract():
     db.session.add(contract)
     db.session.commit()
 
+    # 写入审批记录（提交）
+    record = ApprovalRecord(
+        target_type='transport_contract', target_id=contract.id,
+        action='submit', comment=f'创建运输合同 {contract.contract_no}',
+        operator_id=current_user.id, operator_name=current_user.real_name
+    )
+    db.session.add(record)
+
     # 评分
     score_operation(
         user_id=current_user.id,
@@ -435,6 +501,14 @@ def approve_transport_contract(contract_id):
 
     db.session.commit()
 
+    # 写入审批记录
+    record = ApprovalRecord(
+        target_type='transport_contract', target_id=contract.id,
+        action='approve', comment=data.get('comment', ''),
+        operator_id=current_user.id, operator_name=current_user.real_name
+    )
+    db.session.add(record)
+
     # 评分
     score_operation(
         user_id=current_user.id,
@@ -446,6 +520,39 @@ def approve_transport_contract(contract_id):
     )
 
     return jsonify({'code': 200, 'message': '审批通过', 'data': contract.to_dict()})
+
+
+@bp.route('/transport/<int:contract_id>/return', methods=['PUT'])
+@role_required('admin', 'dispatcher')
+@login_required
+def return_transport_contract(contract_id):
+    """退回运输合同（可重新提交）"""
+    contract = TransportContract.query.get(contract_id)
+    if not contract:
+        return jsonify({'code': 404, 'message': '合同不存在', 'data': None}), 404
+    if contract.status != TransportContract.STATUS_PENDING:
+        return jsonify({'code': 400, 'message': '只有待审批的合同才能退回', 'data': None}), 400
+
+    data = request.get_json() or {}
+    comment = data.get('comment', '')
+    if not comment:
+        return jsonify({'code': 400, 'message': '退回意见不能为空', 'data': None}), 400
+
+    contract.status = TransportContract.STATUS_REJECTED
+    contract.reviewer_id = current_user.id
+    contract.review_comment = comment
+    contract.reviewed_at = beijing_now()
+
+    db.session.commit()
+
+    record = ApprovalRecord(
+        target_type='transport_contract', target_id=contract.id,
+        action='return', comment=comment,
+        operator_id=current_user.id, operator_name=current_user.real_name
+    )
+    db.session.add(record)
+
+    return jsonify({'code': 200, 'message': '已退回', 'data': contract.to_dict()})
 
 
 @bp.route('/transport/<int:contract_id>/reject', methods=['PUT'])
@@ -466,6 +573,14 @@ def reject_transport_contract(contract_id):
     contract.reviewed_at = beijing_now()
 
     db.session.commit()
+
+    # 写入审批记录
+    record = ApprovalRecord(
+        target_type='transport_contract', target_id=contract.id,
+        action='reject', comment=data.get('comment', ''),
+        operator_id=current_user.id, operator_name=current_user.real_name
+    )
+    db.session.add(record)
 
     return jsonify({'code': 200, 'message': '已驳回', 'data': contract.to_dict()})
 

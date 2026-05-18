@@ -10,6 +10,8 @@ SCORING_RULES = {
         'create': 10,       # 正确创建采购申请
         'approve': 5,       # 审批操作
         'reject': 5,        # 驳回操作
+        'return': 5,        # 退回修改
+        'resubmit': 3,      # 重新提交
     },
     'purchase_order': {
         'create': 15,       # 创建采购订单（关联申请+供应商）
@@ -20,6 +22,8 @@ SCORING_RULES = {
         'create': 15,       # 创建运输订单
         'approve': 5,       # 审核订单
         'reject': 5,        # 驳回订单
+        'return': 5,        # 退回修改
+        'resubmit': 3,      # 重新提交
         'dispatch': 15,     # 车辆调度
         'update_status': 5, # 状态更新
         'add_record': 5,     # 添加运输记录
@@ -54,6 +58,7 @@ SCORING_RULES = {
         'approve_purchase': 5,       # 审批采购合同
         'create_transport': 10,       # 创建运输合同
         'approve_transport': 5,       # 审批运输合同
+        'return': 5,                  # 退回合同
         'terminate': 5,              # 终止合同
     },
     'transport_exception': {

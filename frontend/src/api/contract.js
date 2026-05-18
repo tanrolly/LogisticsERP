@@ -10,6 +10,7 @@ export const purchaseContractAPI = {
   getDetail: (id) => axios.get(`/contracts/purchase/${id}`),
   approve: (id, data) => axios.put(`/contracts/purchase/${id}/approve`, data),
   reject: (id, data) => axios.put(`/contracts/purchase/${id}/reject`, data),
+  return: (id, data) => axios.put(`/contracts/purchase/${id}/return`, data),
   terminate: (id) => axios.put(`/contracts/purchase/${id}/terminate`)
 }
 
@@ -23,6 +24,7 @@ export const transportContractAPI = {
   getDetail: (id) => axios.get(`/contracts/transport/${id}`),
   approve: (id, data) => axios.put(`/contracts/transport/${id}/approve`, data),
   reject: (id, data) => axios.put(`/contracts/transport/${id}/reject`, data),
+  return: (id, data) => axios.put(`/contracts/transport/${id}/return`, data),
   terminate: (id) => axios.put(`/contracts/transport/${id}/terminate`)
 }
 

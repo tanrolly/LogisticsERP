@@ -259,23 +259,19 @@ async function handleSubmit() {
 }
 
 async function handleResetPassword(row) {
+  let value
   try {
-    await ElMessageBox.prompt('请输入新密码', '重置密码', {
+    const { value: pwd } = await ElMessageBox.prompt('请输入新密码', '重置密码', {
       confirmButtonText: '确定',
       cancelButtonText: '取消',
       inputType: 'password',
       inputPattern: /.{4,}/,
       inputErrorMessage: '密码至少4个字符'
     })
+    value = pwd
   } catch {
     return // 用户取消
   }
-
-  const { value } = await ElMessageBox.prompt('请输入新密码', '重置密码', {
-    confirmButtonText: '确定',
-    cancelButtonText: '取消',
-    inputType: 'password'
-  }).catch(() => ({ value: null }))
 
   if (!value) return
 

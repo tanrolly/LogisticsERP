@@ -46,7 +46,7 @@
         </el-table-column>
         <el-table-column prop="reviewer_name" label="审批人" width="100" />
         <el-table-column prop="created_at" label="创建时间" width="170" />
-        <el-table-column label="操作" width="240" fixed="right">
+        <el-table-column label="操作" width="320" fixed="right">
           <template #default="{ row }">
             <el-button size="small" @click="viewDetail(row)">详情</el-button>
             <el-button
@@ -54,7 +54,13 @@
               size="small"
               type="success"
               @click="handleApprove(row)"
-            >审批</el-button>
+            >审批通过</el-button>
+            <el-button
+              v-if="row.status === 'pending'"
+              size="small"
+              type="warning"
+              @click="handleReturn(row)"
+            >退回</el-button>
             <el-button
               v-if="row.status === 'pending'"
               size="small"
@@ -112,8 +118,8 @@
       </template>
     </el-dialog>
 
-    <!-- 审批/驳回对话框 -->
-    <el-dialog v-model="showApproveDialog" :title="approveAction === 'approve' ? '审批通过' : '驳回合同'" width="500px">
+    <!-- 审批/驳回/退回对话框 -->
+    <el-dialog v-model="showApproveDialog" :title="dialogTitle" width="500px">
       <el-form :model="approveForm">
         <el-form-item label="审批意见">
           <el-input v-model="approveForm.comment" type="textarea" rows="3" />
@@ -137,7 +143,7 @@ const guideConfig = { title: '采购合同操作指引', steps: [
     ], tips: [
         "合同生效后可用于采购订单关联"
     ] }
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { purchaseContractAPI } from '../../api/contract'
 import { ElMessage, ElMessageBox } from 'element-plus'
@@ -171,6 +177,11 @@ const approveAction = ref('approve')
 const approveForm = ref({
   id: null,
   comment: ''
+})
+
+const dialogTitle = computed(() => {
+  const map = { approve: '审批通过', reject: '驳回合同', return: '退回修改' }
+  return map[approveAction.value] || '审批操作'
 })
 
 const statusText = (status) => {
@@ -248,17 +259,26 @@ const handleReject = (row) => {
   showApproveDialog.value = true
 }
 
+const handleReturn = (row) => {
+  approveAction.value = 'return'
+  approveForm.value = { id: row.id, comment: '' }
+  showApproveDialog.value = true
+}
+
 const submitApprove = async () => {
   submitLoading.value = true
   try {
     let res
     if (approveAction.value === 'approve') {
       res = await purchaseContractAPI.approve(approveForm.value.id, { comment: approveForm.value.comment })
+    } else if (approveAction.value === 'return') {
+      res = await purchaseContractAPI.return(approveForm.value.id, { comment: approveForm.value.comment })
     } else {
       res = await purchaseContractAPI.reject(approveForm.value.id, { comment: approveForm.value.comment })
     }
     if (res.data.code === 200) {
-      ElMessage.success(approveAction.value === 'approve' ? '审批通过' : '已驳回')
+      const msg = { approve: '审批通过', reject: '已驳回', return: '已退回' }[approveAction.value] || '操作成功'
+      ElMessage.success(msg)
       showApproveDialog.value = false
       loadList()
     }

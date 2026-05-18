@@ -10,6 +10,7 @@ from app.api.logs import log_operation
 from app.utils.scoring import score_operation
 from app.utils.time_helper import beijing_now
 from app.utils.permissions import role_required
+from app.models.approval import ApprovalRecord
 from datetime import date
 
 bp = Blueprint('purchase', __name__)
@@ -99,6 +100,11 @@ def create_purchase_request():
     db.session.add(pr)
     db.session.commit()
 
+    # 记录审批记录（提交）
+    _create_approval_record('purchase_request', pr.id, 'submit', current_user,
+                            f'创建采购申请 {pr.req_no}')
+    db.session.commit()
+
     # 记录操作日志
     log_operation(
         user_id=current_user.id,
@@ -146,6 +152,9 @@ def approve_purchase_request(pr_id):
     pr.reviewed_at = beijing_now()
     db.session.commit()
 
+    _create_approval_record('purchase_request', pr.id, 'approve', current_user,
+                            pr.review_comment)
+
     # 记录操作日志
     log_operation(
         user_id=current_user.id,
@@ -183,6 +192,9 @@ def reject_purchase_request(pr_id):
     pr.reviewed_at = beijing_now()
     db.session.commit()
 
+    _create_approval_record('purchase_request', pr.id, 'reject', current_user,
+                            pr.review_comment)
+
     # 记录操作日志
     log_operation(
         user_id=current_user.id,
@@ -201,6 +213,95 @@ def reject_purchase_request(pr_id):
     broadcast_order_status('purchase_request', pr.id, 'rejected', current_user.group_id)
 
     return success_response(pr.to_dict(), '已驳回')
+
+
+def _create_approval_record(target_type, target_id, action, operator, comment=''):
+    """写入审批记录"""
+    record = ApprovalRecord(
+        target_type=target_type,
+        target_id=target_id,
+        action=action,
+        comment=comment,
+        operator_id=operator.id,
+        operator_name=operator.real_name
+    )
+    db.session.add(record)
+
+
+@bp.route('/purchase-requests/<int:pr_id>/return', methods=['PUT'])
+@role_required('admin', 'purchaser')
+@login_required
+def return_purchase_request(pr_id):
+    """退回采购申请（可重新提交）"""
+    pr = PurchaseRequest.query.get_or_404(pr_id)
+
+    if pr.status != 'pending':
+        return error_response('该申请不在待审批状态')
+
+    data = request.get_json() or {}
+    comment = data.get('comment', '')
+    if not comment:
+        return error_response('退回意见不能为空')
+
+    pr.status = 'returned'
+    pr.reviewer_id = current_user.id
+    pr.review_comment = comment
+    pr.reviewed_at = beijing_now()
+    db.session.commit()
+
+    _create_approval_record('purchase_request', pr.id, 'return', current_user, comment)
+
+    log_operation(
+        user_id=current_user.id,
+        group_id=current_user.group_id,
+        module='purchase_request',
+        action='return',
+        target_type='PurchaseRequest',
+        target_id=pr.id,
+        description=f'退回采购申请 {pr.req_no}，意见：{comment}'
+    )
+    db.session.commit()
+
+    score_operation(user_id=current_user.id, group_id=current_user.group_id,
+                    module='purchase_request', action='return')
+    broadcast_order_status('purchase_request', pr.id, 'returned', current_user.group_id)
+
+    return success_response(pr.to_dict(), '已退回，申请人可修改后重新提交')
+
+
+@bp.route('/purchase-requests/<int:pr_id>/resubmit', methods=['PUT'])
+@login_required
+def resubmit_purchase_request(pr_id):
+    """重新提交采购申请（仅申请人可操作）"""
+    pr = PurchaseRequest.query.get_or_404(pr_id)
+
+    if pr.status != 'returned':
+        return error_response('只有被退回的申请才能重新提交')
+    if pr.applicant_id != current_user.id:
+        return error_response('只有申请人才能重新提交')
+
+    pr.status = 'pending'
+    pr.review_comment = None
+    db.session.commit()
+
+    _create_approval_record('purchase_request', pr.id, 'resubmit', current_user, '重新提交')
+
+    log_operation(
+        user_id=current_user.id,
+        group_id=current_user.group_id,
+        module='purchase_request',
+        action='resubmit',
+        target_type='PurchaseRequest',
+        target_id=pr.id,
+        description=f'重新提交采购申请 {pr.req_no}'
+    )
+    db.session.commit()
+
+    score_operation(user_id=current_user.id, group_id=current_user.group_id,
+                    module='purchase_request', action='resubmit')
+    broadcast_order_status('purchase_request', pr.id, 'pending', current_user.group_id)
+
+    return success_response(pr.to_dict(), '采购申请已重新提交，等待审批')
 
 
 # ==================== 采购订单 ====================
