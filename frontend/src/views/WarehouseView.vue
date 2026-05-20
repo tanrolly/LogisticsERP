@@ -170,6 +170,8 @@ const guideConfig = { title: '仓库管理操作指引', steps: [
         "最后在库区下创建货位"
     ], tips: [
         "必须按层级创建：仓库→库区→货位",
+        "点击仓库可打开库区管理页面",
+        "点击库区可打开货位管理页面",
         "删除上级会级联删除下级"
     ] }
 import { ref, onMounted, onUnmounted } from 'vue'

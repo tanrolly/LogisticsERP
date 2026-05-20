@@ -1,7 +1,7 @@
 from flask import Blueprint, request, jsonify
 from flask_login import login_required, current_user
 from app import db
-from app.models.transport import Order, TransportRecord
+from app.models.transport import Order, TransportRecord, TransportException
 from app.models.customer import Customer
 from app.models.vehicle import Vehicle
 from app.models.driver import Driver
@@ -13,7 +13,7 @@ from app.utils.time_helper import beijing_now
 from app.utils.permissions import role_required
 from app.utils.notification_helper import send_notification, notify_role_users
 from app.models.approval import ApprovalRecord
-from datetime import date
+from datetime import datetime, date
 from decimal import Decimal
 
 bp = Blueprint('transport', __name__)
@@ -492,15 +492,21 @@ def complete_order(order_id):
         if driver:
             driver.status = 'available'
 
-    # ③ 自动计算并写入运费（若尚未设置）
-    if not order.freight_amount or order.freight_amount == 0:
-        freight = Decimal('0')
-        if order.weight:
-            freight += Decimal(str(order.weight)) * Decimal('5')     # 5元/千克
-        if order.volume:
-            freight += Decimal(str(order.volume)) * Decimal('100')   # 100元/立方米
-        if freight > 0:
-            order.freight_amount = freight
+    # 获取请求数据（实际运费）
+    data = request.get_json() or {}
+    actual_freight = data.get('actual_freight')
+    remark = data.get('remark', '')
+  
+    # 如果提供了实际运费，更新运费金额
+    if actual_freight is not None:
+        order.freight_amount = actual_freight
+  
+    # 如果有备注，保存到订单
+    if remark and hasattr(order, 'remark'):
+        if not order.remark:
+            order.remark = remark
+        else:
+            order.remark += f' | {remark}'
 
     db.session.commit()
 

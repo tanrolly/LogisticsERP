@@ -96,76 +96,76 @@ def delete_supplier(supplier_id):
 
 # ==================== 客户管理 ====================
 
-@bp.route('/customers', methods=['GET'])
-@login_required
-def get_customers():
-    """获取客户列表"""
-    customers = Customer.query.filter_by(status='active').all()
-    return success_response([c.to_dict() for c in customers])
+# @bp.route('/customers', methods=['GET'])
+# @login_required
+# def get_customers():
+#     """获取客户列表"""
+#     customers = Customer.query.filter_by(status='active').all()
+#     return success_response([c.to_dict() for c in customers])
 
 
-@bp.route('/customers', methods=['POST'])
-@login_required
-def create_customer():
-    """创建客户"""
-    data = request.get_json()
+# @bp.route('/customers', methods=['POST'])
+# @login_required
+# def create_customer():
+#     """创建客户"""
+#     data = request.get_json()
 
-    if not data or not data.get('name'):
-        return error_response('客户名称不能为空')
+#     if not data or not data.get('name'):
+#         return error_response('客户名称不能为空')
 
-    customer = Customer(
-        name=data['name'],
-        contact=data.get('contact'),
-        phone=data.get('phone'),
-        address=data.get('address'),
-        credit_level=data.get('credit_level', 'normal')
-    )
+#     customer = Customer(
+#         name=data['name'],
+#         contact=data.get('contact'),
+#         phone=data.get('phone'),
+#         address=data.get('address'),
+#         credit_level=data.get('credit_level', 'normal')
+#     )
 
-    db.session.add(customer)
-    db.session.commit()
+#     db.session.add(customer)
+#     db.session.commit()
 
-    return success_response(customer.to_dict(), '创建成功')
-
-
-@bp.route('/customers/<int:customer_id>', methods=['GET'])
-@login_required
-def get_customer(customer_id):
-    """获取客户详情"""
-    customer = Customer.query.get_or_404(customer_id)
-    return success_response(customer.to_dict())
+#     return success_response(customer.to_dict(), '创建成功')
 
 
-@bp.route('/customers/<int:customer_id>', methods=['PUT'])
-@login_required
-def update_customer(customer_id):
-    """更新客户"""
-    customer = Customer.query.get_or_404(customer_id)
-    data = request.get_json()
-
-    if data.get('name'):
-        customer.name = data['name']
-    if data.get('contact') is not None:
-        customer.contact = data['contact']
-    if data.get('phone') is not None:
-        customer.phone = data['phone']
-    if data.get('address') is not None:
-        customer.address = data['address']
-    if data.get('credit_level'):
-        customer.credit_level = data['credit_level']
-
-    db.session.commit()
-    return success_response(customer.to_dict(), '更新成功')
+# @bp.route('/customers/<int:customer_id>', methods=['GET'])
+# @login_required
+# def get_customer(customer_id):
+#     """获取客户详情"""
+#     customer = Customer.query.get_or_404(customer_id)
+#     return success_response(customer.to_dict())
 
 
-@bp.route('/customers/<int:customer_id>', methods=['DELETE'])
-@admin_required
-@login_required
-def delete_customer(customer_id):
-    """删除客户（软删除）"""
-    customer = Customer.query.get_or_404(customer_id)
-    customer.status = 'inactive'
-    db.session.commit()
-    return success_response(None, '删除成功')
+# @bp.route('/customers/<int:customer_id>', methods=['PUT'])
+# @login_required
+# def update_customer(customer_id):
+#     """更新客户"""
+#     customer = Customer.query.get_or_404(customer_id)
+#     data = request.get_json()
+
+#     if data.get('name'):
+#         customer.name = data['name']
+#     if data.get('contact') is not None:
+#         customer.contact = data['contact']
+#     if data.get('phone') is not None:
+#         customer.phone = data['phone']
+#     if data.get('address') is not None:
+#         customer.address = data['address']
+#     if data.get('credit_level'):
+#         customer.credit_level = data['credit_level']
+
+#     db.session.commit()
+#     return success_response(customer.to_dict(), '更新成功')
+
+
+# @bp.route('/customers/<int:customer_id>', methods=['DELETE'])
+# @admin_required
+# @login_required
+# def delete_customer(customer_id):
+#     """删除客户（软删除）"""
+#     customer = Customer.query.get_or_404(customer_id)
+#     customer.status = 'inactive'
+#     db.session.commit()
+#     return success_response(None, '删除成功')
 
 
 # ==================== 车辆管理 ====================

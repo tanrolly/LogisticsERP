@@ -82,7 +82,7 @@ const guideConfig = { title: '车辆管理操作指引', steps: [
         "新建车辆，填写车牌、类型等信息",
         "编辑或停用车辆"
     ], tips: [
-        "车辆状态：空闲/在途",
+        "车辆状态：空闲/在途/维护",
         "调度时只能选择空闲车辆"
     ] }
 import { ref, onMounted, onUnmounted } from 'vue'

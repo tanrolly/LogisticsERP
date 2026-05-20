@@ -131,6 +131,50 @@
       </template>
     </el-dialog>
 
+    <!-- 新增：完成订单对话框 -->
+    <el-dialog v-model="showCompleteDialog" title="完成订单" width="500px">
+      <el-form :model="completeForm" label-width="100px">
+        <el-form-item label="系统计算运费">
+          <el-input :value="order?.freight_amount || 0" disabled>
+            <template #append>元</template>
+          </el-input>
+          <div style="color:#909399;font-size:12px;margin-top:5px">
+            系统根据重量和体积自动计算
+          </div>
+        </el-form-item>
+  
+        <el-form-item label="实际运费">
+          <el-input-number 
+            v-model="completeForm.actual_freight" 
+            :min="0" 
+            :precision="2"
+            :step="10"
+            placeholder="请输入实际运费"
+            style="width: 100%"
+          />
+          <div style="color:#E6A23C;font-size:12px;margin-top:5px">
+            如果实际运费与系统计算不一致，可以在这里修改
+          </div>
+        </el-form-item>
+  
+        <el-form-item label="备注说明">
+          <el-input 
+            v-model="completeForm.remark" 
+            type="textarea" 
+            :rows="3"
+            placeholder="如有特殊情况，请在此说明（选填）" 
+          />
+        </el-form-item>
+      </el-form>
+  
+      <template #footer>
+        <el-button @click="showCompleteDialog = false">取消</el-button>
+        <el-button type="primary" @click="submitComplete" :loading="completing">
+          确认完成订单
+        </el-button>
+      </template>
+    </el-dialog>
+
     <!-- 异常登记对话框 -->
     <el-dialog v-model="showExceptionDialog" title="登记运输异常" width="500px">
       <el-form :model="exceptionForm" label-width="100px">
@@ -204,7 +248,7 @@ const guideConfig = { title: '运输订单详情操作指引', steps: [
         "签收后不可撤销",
         "完成订单后自动计算运费和生成应收账款"
     ] }
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, reactive, computed, onMounted, onUnmounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { orderAPI, transportRecordAPI, exceptionAPI } from '../api/index'
 import { ElMessage, ElMessageBox } from 'element-plus'
@@ -216,9 +260,13 @@ const exceptions = ref([])
 const loading = ref(false)
 const isMobile = ref(false)
 const showPodDialog = ref(false)
+const showCompleteDialog = ref(false)  // 新增：完成订单对话框显示状态
+const completing = ref(false)  // 新增：完成订单提交状态
 const showExceptionDialog = ref(false)
 const showHandleDialog = ref(false)
 const podForm = reactive({ signee_name: '', signee_phone: '', pod_image: '' })
+// 新增：完成订单表单
+const completeForm = reactive({ actual_freight: null, remark: '' })
 const exceptionForm = reactive({ exception_type: '', severity: 'normal', location: '', description: '', image: '' })
 const handleForm = reactive({ id: null, handle_status: 'processing', handle_note: '' })
 const checkWidth = () => { isMobile.value = window.innerWidth < 768 }
@@ -292,17 +340,65 @@ const confirmPod = async () => {
   } catch (e) { ElMessage.error('操作失败') }
 }
 
-const completeOrder = async () => {
+// 修改：打开完成订单对话框 
+const completeOrder = () => {
+  // 初始化表单，默认填入系统计算的运费
+  completeForm.actual_freight = order.value?.freight_amount || null
+  completeForm.remark = ''
+  showCompleteDialog.value = true
+}
+
+// 新增：提交完成订单
+const submitComplete = async () => {
+  // 验证实际运费
+  if (completeForm.actual_freight === null || completeForm.actual_freight === undefined) {
+    ElMessage.warning('请输入实际运费')
+    return
+  }
+  
+  completing.value = true
+  
   try {
-    await ElMessageBox.confirm('确认完成该订单？完成后将生成应收款项。', '完成订单', { type: 'warning' })
-    const res = await orderAPI.complete(route.params.id)
+    // 准备提交数据
+    const submitData = {
+      actual_freight: completeForm.actual_freight,
+      remark: completeForm.remark
+    }
+  
+    // 如果实际运费与系统计算的不一致，显示提示
+    if (order.value && completeForm.actual_freight !== order.value.freight_amount) {
+      const diff = completeForm.actual_freight - (order.value.freight_amount || 0)
+      const diffText = diff > 0 ? `高出 ${diff} 元` : `低出 ${Math.abs(diff)} 元`
+  
+      await ElMessageBox.confirm(
+        `实际运费与系统计算不一致，${diffText}。是否继续完成订单？`,
+        '运费差异确认',
+        {
+          confirmButtonText: '继续完成',
+          cancelButtonText: '取消',
+          type: 'warning'
+        }
+      )
+    }
+  
+    // 调用完成订单API，传入实际运费
+    const res = await orderAPI.complete(route.params.id, submitData)
+  
     if (res.data.code === 200) {
       ElMessage.success('订单已完成')
-      loadData()
+      showCompleteDialog.value = false
+      loadData()  // 重新加载数据
     } else {
-      ElMessage.error(res.data.message)
+      ElMessage.error(res.data.message || '操作失败')
     }
-  } catch (e) { if (e !== 'cancel') ElMessage.error('操作失败') }
+  } catch (e) {
+    if (e !== 'cancel') {
+      console.error('完成订单失败:', e)
+      ElMessage.error('操作失败')
+    }
+  } finally {
+    completing.value = false
+  }
 }
 
 // 异常相关函数

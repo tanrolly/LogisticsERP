@@ -51,7 +51,7 @@ export const orderAPI = {
   updateStatus: (id, data) => axios.put(`/orders/${id}/status`, data),
   getFreight: (id) => axios.get(`/orders/${id}/freight`),
   confirmPod: (id, data) => axios.post(`/orders/${id}/pod`, data),
-  complete: (id) => axios.put(`/orders/${id}/complete`)
+  complete: (id, data) => axios.put(`/orders/${id}/complete`, data)
 }
 
 export const transportRecordAPI = {
